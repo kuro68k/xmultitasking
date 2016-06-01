@@ -8,8 +8,8 @@
 
 #include <avr/io.h>
 
-.extern	task_enable_mask
-.extern	task_sleep_mask
+.extern	task_enable_mask_AT
+.extern	task_sleep_mask_AT
 .extern	task_stack_ptr
 .extern	task_index
 .extern	task_index_mask
@@ -33,8 +33,8 @@ TASK_yield:
 	push	zh
 	
 	// deep power saving sleep while no tasks enabled (must be woken by by interrupts)
-	lds		r17, task_enable_mask
 psave_loop:
+	lds		r17, task_enable_mask_AT
 	tst		r17
 	brne	no_psave
 	//ldi		r18, SLEEP_SMODE_PSAVE_gc | SLEEP_SEN_bm;
@@ -49,7 +49,7 @@ no_psave:
 
 	// find next task
 	lds		r17, task_index
-	mov		r19, r17		// save for later
+	mov		r19, r17		// save last task_index for later
 find_next_task:
 	lds		r16, task_index_mask
 	lsl		r16
@@ -63,7 +63,8 @@ no_wrap:
 	sts		task_index, r17
 	sts		task_index_mask, r16
 	
-	and		r16, r18		// & task_enable_mask
+	lds		r18, task_enable_mask_AT
+	and		r16, r18		// & task_enable_mask_AT
 	breq	find_next_task	// not enabled
 
 	// save current task's state to its stack
@@ -117,9 +118,11 @@ no_wrap:
 	lsl		r19				// old task index * 2
 	add		zl, r19
 	adc		zh, r1			// GGC keeps r1 always 0
+	cli
 	in		r16, CPU_SPL
 	st		Z+, r16
 	in		r16, CPU_SPH
+	sei
 	st		Z, r16
 
 	// load next tasks stack point into r16 and r18
@@ -129,9 +132,11 @@ no_wrap:
 	add		zl, r17
 	adc		zh, r1			// GGC keeps r1 always 0
 	ld		r16, Z+
+	cli
 	out		CPU_SPL, r16
 	ld		r16, Z
 	out		CPU_SPH, r16
+	sei
 
 	pop		r0
 	pop		r1
@@ -189,8 +194,10 @@ no_wrap:
 idle_sleep:
 	push	r18
 	push	r17
-	lds		r18, task_sleep_mask
-	lds		r17, task_enable_mask
+	cli
+	lds		r18, task_sleep_mask_AT
+	lds		r17, task_enable_mask_AT
+	sei
 	cp		r17, r18
 	brne	idle_sleep_exit
 	//ldi		r18, SLEEP_SMODE_IDLE_gc | SLEEP_SEN_bm;
@@ -200,9 +207,9 @@ idle_sleep:
 	//ldi		r18, SLEEP_SMODE_IDLE_gc;
 	ldi		r18, 0b0000;
 	sts		SLEEP_CTRL, r18
+idle_sleep_exit:
 	pop		r17
 	pop		r18
-idle_sleep_exit:
 	ret
 
 
@@ -233,10 +240,12 @@ TASK_load:
 	ldd		xh, z+1
 
 	// temporarily load new task's stack pointer
+	cli
 	in		r16, CPU_SPL
 	in		r17, CPU_SPH
 	out		CPU_SPL, xl
 	out		CPU_SPH, xh
+	sei
 
 	//st		-x, r25			// push address of new task onto its stack
 	//st		-x, r24			// so it is picked up by ret in TASK_yield
@@ -287,6 +296,7 @@ TASK_load:
 	push	r1
 
 	// save new task stack pointer
+	cli
 	in		xl, CPU_SPL
 	in		xh, CPU_SPH
 	st		z, xl
@@ -295,6 +305,7 @@ TASK_load:
 	// restore current task's stack pointer
 	out		CPU_SPL, r16
 	out		CPU_SPH, r17
+	sei
 	
 	pop		xl
 	pop		xh

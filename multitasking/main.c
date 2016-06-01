@@ -9,9 +9,9 @@
 #include "tasks.h"
 
 
+void task0(void) __attribute__ ((noreturn));
 void task1(void) __attribute__ ((noreturn));
 void task2(void) __attribute__ ((noreturn));
-void task3(void) __attribute__ ((noreturn));
 
 
 /******************************************************************************
@@ -80,6 +80,7 @@ int main(void)
 {
 	TASK_init();
 	TASK_create((uint16_t)task1, 1);
+	TASK_create((uint16_t)task2, 2);
 	TASK_yield();
 
 	asm("nop");		// should never get here

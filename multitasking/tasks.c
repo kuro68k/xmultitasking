@@ -17,6 +17,7 @@
 #define NUM_TASKS	8
 
 uint8_t		task_enable_mask = 0;
+uint8_t		task_sleep_mask = 0;
 uint16_t	task_stack_ptr[NUM_TASKS];
 uint8_t		task_index = 0;
 uint8_t		task_index_mask = 1;
@@ -64,3 +65,7 @@ void TASK_disable(uint8_t task_number)
 	task_enable_mask &= ~(1 << task_number);
 	sei();
 }
+
+/******************************************************************************
+** Sleep task
+*/

@@ -9,6 +9,7 @@
 #include <avr/io.h>
 
 .extern	task_enable_mask
+.extern	task_sleep_mask
 .extern	task_stack_ptr
 .extern	task_index
 .extern	task_index_mask
@@ -31,14 +32,20 @@ TASK_yield:
 	push	zl
 	push	zh
 	
-	// sleep while no tasks enabled (must be enabled by interrupts)
-	lds		r18, task_enable_mask
-sleep_loop:
-	tst		r18
-	brne	no_sleep
+	// deep power saving sleep while no tasks enabled (must be woken by by interrupts)
+	lds		r17, task_enable_mask
+psave_loop:
+	tst		r17
+	brne	no_psave
+	//ldi		r18, SLEEP_SMODE_PSAVE_gc | SLEEP_SEN_bm;
+	ldi		r18, 0b0111;
+	sts		SLEEP_CTRL, r18
 	sleep
-	rjmp	sleep_loop
-no_sleep:
+	//ldi		r18, SLEEP_SMODE_IDLE_gc;
+	ldi		r18, 0b0000;
+	sts		SLEEP_CTRL, r18
+	rjmp	psave_loop
+no_psave:
 
 	// find next task
 	lds		r17, task_index
@@ -51,6 +58,7 @@ find_next_task:
 	brlt	no_wrap
 	ldi		r17, 0			// task_index
 	ldi		r16, 1			// task_index_mask
+	rcall	idle_sleep		// idle sleep mode when all tasks asleep
 no_wrap:
 	sts		task_index, r17
 	sts		task_index_mask, r16
@@ -175,6 +183,26 @@ no_wrap:
 	pop		r17
 	pop		r18
 	pop		r19
+	ret
+
+
+idle_sleep:
+	push	r18
+	push	r17
+	lds		r18, task_sleep_mask
+	lds		r17, task_enable_mask
+	cp		r17, r18
+	brne	idle_sleep_exit
+	//ldi		r18, SLEEP_SMODE_IDLE_gc | SLEEP_SEN_bm;
+	ldi		r18, 0b0001;
+	sts		SLEEP_CTRL, r18
+	sleep
+	//ldi		r18, SLEEP_SMODE_IDLE_gc;
+	ldi		r18, 0b0000;
+	sts		SLEEP_CTRL, r18
+	pop		r17
+	pop		r18
+idle_sleep_exit:
 	ret
 
 

@@ -216,7 +216,7 @@ idle_sleep_exit:
 /******************************************************************************
 ** Task creation
 ** task pointer in r24:r25
-** task index in 
+** task index in r22
 */
 TASK_load:
 	push	r22
@@ -228,7 +228,7 @@ TASK_load:
 	push	xl
 
 
-	// load next tasks stack point into r16 and r18
+	// load new tasks stack point into r16 and r18
 	ldi		zl, lo8(task_stack_ptr)
 	ldi		zh, hi8(task_stack_ptr)
 							// task index in r22
@@ -247,14 +247,13 @@ TASK_load:
 	out		CPU_SPH, xh
 	sei
 
-	//st		-x, r25			// push address of new task onto its stack
-	//st		-x, r24			// so it is picked up by ret in TASK_yield
 	push	r24
 	push	r25
 	push	r1				// 24 bit return address
 	
 
 	// clear all registers that will be reloaded from stack
+
 	push	r1
 	push	r1
 	push	r1

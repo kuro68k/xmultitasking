@@ -40,8 +40,6 @@ void task1(void)
 {
 	uint8_t count = 0;
 
-	TASK_create((uint16_t)task0, 0);
-
 	for(;;)
 	{
 		count++;
@@ -74,7 +72,7 @@ void task2(void)
 
 
 /******************************************************************************
-** Main entry point, starts an initial task
+** Main entry point, also task 0
 */
 int main(void)
 {
@@ -83,6 +81,14 @@ int main(void)
 	TASK_create((uint16_t)task2, 2);
 	TASK_yield();
 
-	asm("nop");		// should never get here
-	for(;;);
+	uint8_t count = 0;
+	for(;;)
+	{
+		count++;
+		if (count == 2)
+		{
+			PORTA.OUTTGL = PIN0_bm;
+			TASK_yield();
+		}
+	}
 }

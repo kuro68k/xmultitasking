@@ -3,6 +3,9 @@
  *
  * Created: 26/05/2016 13:57:20
  *  Author: paul.qureshi
+ *
+ * Note: Task 0's stack should begin where GCC's stack does by default, i.e. RAMEND.
+ * This allows main() to become task 0.
  */ 
 
 #include <avr/io.h>
@@ -31,7 +34,7 @@ void TASK_init(void)
 	for (uint8_t i = 0; i < NUM_TASKS; i++)
 		task_stack_ptr[i] = RAMEND - (STACK_SIZE * i);
 
-	task_enable_mask_AT |= 1;
+	task_enable_mask_AT |= 1;	// enable task 0
 }
 
 /******************************************************************************
